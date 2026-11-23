@@ -108,6 +108,8 @@ input{font:inherit}
 .mlbar i{display:block;height:100%;background:var(--tx3);border-radius:2px}
 .mlv{font-size:14.5px;color:var(--tx3);width:36px;text-align:right;flex:none;font-style:italic}
 
+.fixrow{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1.5px solid var(--amber);border-radius:var(--r);padding:12px 15px;font-size:17px}
+.fixrow .segb{border:1.4px solid var(--line);background:var(--surface2);color:var(--tx)}
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:26px;font-size:17px;color:var(--tx2)}
 .seg{display:flex;gap:2px;border:1.4px solid var(--line);border-radius:var(--r);padding:3px}
 .segb{font-size:16px;color:var(--tx3);padding:3px 12px;border-radius:7px}
@@ -153,6 +155,9 @@ input{font:inherit}
 .extop{height:2.5px;background:var(--soft);border-radius:2px;margin-bottom:28px;overflow:hidden}
 .extop i{display:block;height:100%;background:var(--h-amber);border-radius:2px;transition:width .35s ease}
 .lbl{font-size:13.5px;color:var(--tx3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+.passage{border-left:2.5px solid var(--h-teal);padding:4px 0 4px 16px;margin-bottom:22px;font-size:21px;line-height:1.65}
+.pfoot{display:flex;align-items:center;gap:9px;margin-top:11px;font-size:15px;color:var(--tx3);font-style:italic}
+.rq{font-size:21px;margin-bottom:18px}
 .prompt{font-size:27px;line-height:1.32;margin-bottom:24px}
 .subtle{font-size:17px;color:var(--tx3);font-style:italic;margin:-16px 0 18px}
 
@@ -621,6 +626,68 @@ MODULES.forEach(m=>{ if(EXTRA[m.id]) m.vocab2=EXTRA[m.id]; });
     m.vocab2=m.vocab2.filter(v=>{ if(seen.has(v[0]))return false; seen.add(v[0]); return true; });
   });
 })();
+const READ={
+m1:{sv:"Hej! Jag heter Erik. Jag är trettio år gammal och jag kommer från Göteborg. Nu bor jag i Stockholm. Jag jobbar på ett kontor i stan. Min flickvän heter Sofia. Hon kommer från Finland, men hon pratar svenska hemma.",
+q:[{q:"Where does Erik live now?",o:["Göteborg","Stockholm","Finland"],a:1},
+{q:"What does he do?",o:["He works in an office","He works in a shop","He is a student"],a:0},
+{q:"Where is Sofia from?",o:["Sweden","Finland","Spain"],a:1}]},
+
+m2:{sv:"Anna tycker inte om kaffe. Hon dricker alltid te på morgonen. Hennes man Johan dricker kaffe, men han tycker inte om te. På lördagar jobbar de inte. Då går de till en liten restaurang i stan. Anna äter aldrig fisk, så hon tar kyckling.",
+q:[{q:"What does Anna drink in the mornings?",o:["Coffee","Tea","Milk"],a:1},
+{q:"Does Johan like tea?",o:["Yes","No","He never drinks it in the morning"],a:1},
+{q:"What does Anna never eat?",o:["Chicken","Cheese","Fish"],a:2}]},
+
+m3:{sv:"Vi har en liten lägenhet i stan. Köket är litet men fint. I köket står ett bord och fyra stolar. Lampan över bordet är ny. Det finns också ett stort fönster och en dörr till balkongen. Nyckeln till dörren ligger på hyllan.",
+q:[{q:"How many chairs are in the kitchen?",o:["Two","Three","Four"],a:2},
+{q:"What is new?",o:["The lamp","The table","The door"],a:0},
+{q:"Where is the key?",o:["On the table","On the shelf","By the window"],a:1}]},
+
+m4:{sv:"— Ursäkta, var ligger tågstationen?\n— Den ligger rakt fram, bredvid apoteket.\n— Tack! Vart går den här bussen?\n— Till flygplatsen. Den börjar klockan nio.\n— Hur mycket kostar en biljett?\n— Trettio kronor.",
+q:[{q:"Where is the train station?",o:["Behind the pharmacy","Straight ahead, next to the pharmacy","To the left of the shop"],a:1},
+{q:"Where does the bus go?",o:["The airport","The train station","The city centre"],a:0},
+{q:"What does a ticket cost?",o:["Thirteen kronor","Thirty kronor","Nine kronor"],a:1}]},
+
+m5:{sv:"I går jobbade jag sent. På kvällen lagade jag mat hemma. Sedan tittade vi på en film. I dag är jag trött. I morgon ska vi åka till Riga. På lördag träffar vi Sofias familj.",
+q:[{q:"When did he work late?",o:["Today","Yesterday","On Saturday"],a:1},
+{q:"What did they do after dinner?",o:["Went out","Watched a film","Went to bed"],a:1},
+{q:"Who are they meeting on Saturday?",o:["His family","Sofia's family","Nobody"],a:1}]},
+
+m6:{sv:"Vi handlar mat på lördagar. Vi köper alltid tre tomater, två gurkor och sex ägg. Bröd och ost är dyra den här veckan. Potatis är billig. Min syster vill ha två äpplen och lite socker. Vi behöver två väskor.",
+q:[{q:"When do they shop?",o:["On Fridays","On Saturdays","Every day"],a:1},
+{q:"How many eggs do they buy?",o:["Two","Three","Six"],a:2},
+{q:"What is cheap this week?",o:["Bread","Cheese","Potatoes"],a:2}]},
+
+m7:{sv:"I somras reste vi till Spanien. Vi bodde i en liten stad och varje morgon gick vi till ett café och åt frukost. En dag köpte jag en bok på spanska, men jag förstod ingenting. På kvällarna drack vi vin och pratade länge. Det var en bra resa.",
+q:[{q:"Where did they travel last summer?",o:["Spain","Finland","Sweden"],a:0},
+{q:"What did he buy one day?",o:["A newspaper","A book in Spanish","A bottle of wine"],a:1},
+{q:"Did he understand it?",o:["Yes, all of it","Some of it","Nothing at all"],a:2}]},
+
+m8:{sv:"Jag har bott i tre länder. Jag har jobbat i England och i Spanien, och nu har jag flyttat till Sverige. Jag har aldrig varit i Finland, men Sofia har sagt att vi ska åka dit i vinter. Hon har redan köpt biljetterna.",
+q:[{q:"How many countries has he lived in?",o:["Two","Three","Four"],a:1},
+{q:"Has he been to Finland?",o:["Yes, once","Yes, several times","Never"],a:2},
+{q:"What has Sofia already done?",o:["Booked a hotel","Bought the tickets","Packed her bag"],a:1}]},
+
+m9:{sv:"Johan sa att han inte kunde komma i kväll. Han sa att han var tvungen att jobba sent. Jag tror att han glömde vårt möte, men jag vet inte. Anna säger att hon inte är arg. Hon hoppas att han ringer i morgon.",
+q:[{q:"Why could Johan not come?",o:["He was ill","He had to work late","He forgot where it was"],a:1},
+{q:"What does the narrator think?",o:["That Johan forgot the meeting","That Johan is lying","That Johan is angry"],a:0},
+{q:"Is Anna angry?",o:["Yes, very","She says she isn't","She hasn't said"],a:1}]},
+
+m10:{sv:"Vi vill åka till Göteborg i helgen, men vi måste jobba på lördag. Jag kan köra bilen om du vill. Vi ska boka ett hotell i kväll. Får jag fråga en sak? Kan vi stanna tre dagar istället för två?",
+q:[{q:"When must they work?",o:["Friday","Saturday","Sunday"],a:1},
+{q:"Who can drive?",o:["The person speaking","The other person","Neither of them"],a:0},
+{q:"How long does he want to stay?",o:["Two days","Three days","A week"],a:1}]},
+
+m11:{sv:"Vår nya lägenhet är stor och ljus. Köket är litet, men det är rent. Sovrummet är mörkt på morgonen, så vi köpte en ny lampa. Grannarna är snälla och lugna. Hyran är dyr, men lägenheten är verkligen vacker.",
+q:[{q:"What is the kitchen like?",o:["Big and bright","Small but clean","Small and dirty"],a:1},
+{q:"Why did they buy a lamp?",o:["The old one broke","The bedroom is dark in the morning","The kitchen has no window"],a:1},
+{q:"What are the neighbours like?",o:["Kind and quiet","Noisy","They haven't met them"],a:0}]},
+
+m12:{sv:"Min familj är inte stor. Jag har två systrar och en bror. Min bror bor i England med sin fru. Hans dotter heter Ella och hon är fem år. Mina systrar bor i Spanien. Deras hus ligger nära stan. Min mamma ringer varje söndag.",
+q:[{q:"How many siblings does he have?",o:["Two","Three","Four"],a:1},
+{q:"Who is Ella?",o:["His sister","His brother's daughter","His wife"],a:1},
+{q:"When does his mum ring?",o:["Every Sunday","Every Saturday","Once a month"],a:0}]}
+};
+MODULES.forEach(m=>{ if(READ[m.id]) m.read=READ[m.id]; });
 const L={
 en:{
 nav_home:"Home",nav_course:"Course",nav_games:"Games",nav_words:"Words",
@@ -659,7 +726,8 @@ off_wait:"Saving for offline use · reload once to finish",
 off_no:"This browser cannot store it for offline use",
 set_prog:"Progress",p_copy:"copy code",p_paste:"paste code",
 p_copied:"code copied",p_manual:"Copy the text above by hand.",p_here:"paste the code here",
-p_load:"load it",p_ok:"progress merged",p_bad:"that code did not work",t_updated:"new version ready"
+p_load:"load it",p_ok:"progress merged",p_bad:"that code did not work",t_updated:"new version ready",sec_fix:"to put right",fix_count:n=>n+(n===1?" thing":" things")+" you got wrong",fix_go:"practise these",
+l_read:"read and answer",read_again:"read it again"
 },
 sv:{
 nav_home:"Hem",nav_course:"Kurs",nav_games:"Spel",nav_words:"Ord",
@@ -698,7 +766,8 @@ off_wait:"Sparas för offline · ladda om en gång",
 off_no:"Den här webbläsaren kan inte spara den offline",
 set_prog:"Framsteg",p_copy:"kopiera kod",p_paste:"klistra in",
 p_copied:"koden kopierad",p_manual:"Kopiera texten ovan för hand.",p_here:"klistra in koden här",
-p_load:"läs in",p_ok:"framsteg sammanslagna",p_bad:"koden fungerade inte",t_updated:"ny version redo"
+p_load:"läs in",p_ok:"framsteg sammanslagna",p_bad:"koden fungerade inte",t_updated:"ny version redo",sec_fix:"att rätta till",fix_count:n=>n+(n===1?" sak":" saker")+" du hade fel på",fix_go:"öva på dem",
+l_read:"läs och svara",read_again:"läs igen"
 }};
 function lang(){return S.lang==="sv"?"sv":"en"}
 function T(k,...a){
@@ -721,6 +790,7 @@ function itemsOf(m){
   const out=[];
   m.dr.forEach((d,i)=>out.push({id:m.id+"#"+i,mid:m.id,kind:"dr",i}));
   m.vocab.forEach((v,i)=>out.push({id:"v:"+v[0],mid:m.id,kind:"vo",i}));
+  if(m.read)m.read.q.forEach((q,i)=>out.push({id:m.id+"#r"+i,mid:m.id,kind:"rd",i}));
   return out;
 }
 function allItems(){return MODULES.flatMap(itemsOf)}
@@ -1171,7 +1241,11 @@ function viewHem(){
     body+='</div>';
   });
 
-  const lv2='<div class="sec">'+T("sec_levels")+'</div><div class="minilvls">'+["A1","A2","B1"].map(l=>{
+  const bad=weakItems();
+  const fix=bad.length?'<div class="sec">'+T("sec_fix")+'</div>'+
+    '<div class="fixrow"><span>'+esc(T("fix_count",bad.length))+'</span>'+
+    '<button class="segb on" id="fixgo">'+T("fix_go")+'</button></div>':"";
+  const lv2=fix+'<div class="sec">'+T("sec_levels")+'</div><div class="minilvls">'+["A1","A2","B1"].map(l=>{
     const pc=levelPc(l);
     return '<div class="minilvl"><span class="mlk">'+l+'</span><span class="mlbar"><i style="width:'+pc+'%"></i></span><span class="mlv">'+pc+'%</span></div>';
   }).join("")+'</div>';
@@ -1196,6 +1270,8 @@ function viewHem(){
     '<div class="comingcard"><div class="grpic" style="--c:var(--h-violet);--cs:var(--hs-violet)">'+ico("sun")+'</div>'+
     '<div><b>'+T("coming_t")+'</b><p>'+esc(T("coming_b"))+'</p></div></div></div></div>';
   document.getElementById("goBtn").onclick=()=>startNext();
+  const fg=document.getElementById("fixgo");
+  if(fg)fg.onclick=()=>startFix();
   V().querySelectorAll("[data-grp]").forEach(b=>b.onclick=()=>{const i=+b.dataset.grp;OPENG=OPENG===i?-1:i;viewHem()});
   V().querySelectorAll("[data-typ]").forEach(b=>b.onclick=()=>{S.typing=b.dataset.typ;save();viewHem();toast(T("t_saved"))});
   V().querySelectorAll("[data-aud]").forEach(b=>b.onclick=()=>{S.audio=b.dataset.aud;save();viewHem();toast(T("t_saved"))});
@@ -1289,6 +1365,8 @@ function typingRate(){return S.typing==="off"?0:S.typing==="some"?0.45:0.18}
 function buildQ(it){
   const m=mod(it.mid);
   let q;
+  if(it.kind==="rd"){const r=m.read.q[it.i];
+    return {t:"read",p:m.read.sv,q:r.q,o:r.o,a:r.a,id:it.id,mid:it.mid};}
   if(it.kind==="dr"){q=Object.assign({},m.dr[it.i],{id:it.id,mid:it.mid})}
   else{
     const v=m.vocab[it.i], s=strength(it.id);
@@ -1304,7 +1382,16 @@ function buildQ(it){
   return q;
 }
 
+function weakItems(){
+  return allItems().filter(it=>{const r=rec(it.id);return r&&strength(it.id)<1});
+}
+function startFix(){
+  const w=shuffle(weakItems()).slice(0,10);
+  if(!w.length){toast(T("t_nothing"));return}
+  SESS={q:w.map(buildQ),i:0,right:0,wrong:0,miss:[],title:T("sec_fix")};render();
+}
 function startNext(){
+  if(weakItems().length>=6)return startFix();
   const n=nextUp();
   if(n.kind==="module"){ if(!modStarted(n.m)){OPENMOD=n.m;SESS=null;return render()} return startModule(n.m) }
   startReview(n.n);
@@ -1316,9 +1403,13 @@ function startReview(n){
 }
 function startModule(m){
   const its=itemsOf(m);
-  const fresh=its.filter(it=>!rec(it.id)).slice(0,8);
-  const weak=its.filter(it=>{const r=rec(it.id);return r&&r.due<=now()}).slice(0,4);
-  const pick=fresh.concat(weak);
+  const unseen=its.filter(it=>!rec(it.id));
+  const fresh=unseen.filter(x=>x.kind!=="rd").slice(0,7);
+  const reading=unseen.filter(x=>x.kind==="rd").slice(0,3);
+  const shaky=its.filter(it=>{const r=rec(it.id);return r&&strength(it.id)<1}).slice(0,6);
+  const due_=its.filter(it=>{const r=rec(it.id);return r&&strength(it.id)>=1&&r.due<=now()}).slice(0,4);
+  let pick=fresh.concat(shaky,due_).slice(0,9).concat(reading);
+  if(!pick.length)pick=shuffle(its).slice(0,8);
   if(!pick.length){toast(T("t_moddone"));go("kurs");return}
   if(!S.mods[m.id])S.mods[m.id]={started:now()};
   SESS={q:pick.map(buildQ),i:0,right:0,wrong:0,miss:[],title:titleOf(m),mid:m.id};save();render();
@@ -1342,6 +1433,12 @@ function renderSession(){
     body='<div class="lbl">'+T("l_build")+'</div><div class="prompt">'+esc(q.en)+(audioOn()&&canSpeak()?"":"")+'</div>'+
       '<div class="drop" id="drop" data-ph="'+T("ph_tiles")+'"></div>'+
       '<div class="bank" id="bank">'+words.map((w,i)=>'<button class="tile" data-w="'+esc(w)+'">'+esc(w)+'</button>').join("")+'</div>';
+  } else if(q.t==="read"){
+    body='<div class="lbl">'+T("l_read")+'</div>'+
+      '<div class="passage">'+esc(q.p).replace(/\n/g,"<br>")+
+      (audioOn()?'<div class="pfoot">'+spk(q.p)+'<span>'+T("read_again")+'</span></div>':"")+'</div>'+
+      '<div class="rq">'+esc(q.q)+'</div>'+
+      '<div class="opts">'+q.o.map((o,i)=>'<button class="opt" data-o="'+i+'">'+esc(o)+'</button>').join("")+'</div>';
   } else if(q.t==="choice"){
     body='<div class="lbl">'+(q.vocab?T("l_mean"):T("l_choose"))+'</div><div class="prompt'+(q.vocab?" sv":"")+'">'+esc(q.q)+'</div>'+
       '<div class="opts">'+q.o.map((o,i)=>'<button class="opt" data-o="'+i+'">'+esc(o)+'</button>').join("")+'</div>';
@@ -1398,7 +1495,7 @@ function wire(q){
       if(!got)return showErr(T("e_build"));
       submit(q,got);
     };
-  } else if(q.t==="choice"||q.t==="gender"){
+  } else if(q.t==="choice"||q.t==="gender"||q.t==="read"){
     document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
       const i=+b.dataset.o, ok=i===q.a;
       document.querySelectorAll(".opt").forEach((x,j)=>{if(j===q.a)x.classList.add("right");else if(j===i&&!ok)x.classList.add("wrong");x.onclick=null});
@@ -1414,16 +1511,28 @@ function wire(q){
 }
 function correctOf(q){
   if(q.t==="gender")return (q.a?"ett ":"en ")+q.w;
-  if(q.t==="choice")return q.o[q.a];
+  if(q.t==="choice"||q.t==="read")return q.o[q.a];
+  if(q.t==="fill")return q.a||"";
   return q.sv||q.a||"";
 }
+function answersOf(q){
+  if(q.t==="fill")return [q.a].concat(q.alt||[]).filter(Boolean);
+  return [q.sv||q.a].concat(q.alt||[]).filter(Boolean);
+}
+function swedishOf(q){
+  if(q.t==="fill")return (q.sv||"").replace(/_+/, q.a||"");
+  if(q.t==="gender")return (q.a?"ett ":"en ")+q.w;
+  if(q.t==="choice")return q.vocab?q.q:"";
+  if(q.t==="read")return "";
+  return q.sv||"";
+}
 function noteMiss(q,given){
-  SESS.miss.push({prompt:q.t==="choice"&&q.vocab?q.q:(q.en||q.q||q.sv||q.w),given:given,right:correctOf(q),why:q.why||""});
+  SESS.miss.push({prompt:(q.t==="choice"&&q.vocab)||q.t==="read"?q.q:(q.en||q.q||q.sv||q.w),given:given,right:correctOf(q),why:q.why||""});
 }
 function showErr(m){document.getElementById("errslot").innerHTML='<div class="err">'+esc(m)+'</div>'}
 
 async function submit(q,given){
-  const answers=[q.sv||q.a].concat(q.alt||[]).filter(Boolean);
+  const answers=answersOf(q);
   const r=check(given,answers);
   if(r.r==="empty")return showErr(T("e_ans"));
   if(r.r==="ok"||r.r==="accent"){grade(q.id,2);SESS.right++;return showFb(q,r)}
@@ -1446,10 +1555,10 @@ function showFb(q,r,skipped){
   document.getElementById("errslot").innerHTML=
     '<div class="fb '+kind+'"><span class="fbic">'+(kind==="ok"?"✓":kind==="near"?"~":"✕")+'</span>'+
     '<span class="fbtx"><b>'+esc(head)+'</b>'+
-    (show&&r.a?'<span class="corr">'+esc(r.a)+(audioOn()?spk(r.a,"inline"):"")+'</span>':"")+
+    (show&&r.a?'<span class="corr">'+esc(r.a)+((audioOn()&&swedishOf(q))?spk(bare(swedishOf(q)),"inline"):"")+'</span>':"")+
     (why?'<span class="why">'+esc(why)+'</span>':"")+'</span></div>'+
     '<button class="go" id="nx"><span>'+T("next")+'</span><span class="goarr">→</span></button>';
-  if(audioOn()&&(r.r==="ok"||r.r==="alt"||r.r==="accent"||r.r==="near")){const t=q.sv||r.a;if(t&&!q.vocab)say(t);else if(t)say(bare(t))}
+  if(audioOn()){const t=swedishOf(q); if(t)say(bare(t))}
   const nx=document.getElementById("nx");
   const adv=()=>{document.onkeydown=null;SESS.i++;render()};
   nx.onclick=adv;
