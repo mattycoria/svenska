@@ -659,7 +659,7 @@ off_wait:"Saving for offline use · reload once to finish",
 off_no:"This browser cannot store it for offline use",
 set_prog:"Progress",p_copy:"copy code",p_paste:"paste code",
 p_copied:"code copied",p_manual:"Copy the text above by hand.",p_here:"paste the code here",
-p_load:"load it",p_ok:"progress merged",p_bad:"that code did not work"
+p_load:"load it",p_ok:"progress merged",p_bad:"that code did not work",t_updated:"new version ready"
 },
 sv:{
 nav_home:"Hem",nav_course:"Kurs",nav_games:"Spel",nav_words:"Ord",
@@ -698,7 +698,7 @@ off_wait:"Sparas för offline · ladda om en gång",
 off_no:"Den här webbläsaren kan inte spara den offline",
 set_prog:"Framsteg",p_copy:"kopiera kod",p_paste:"klistra in",
 p_copied:"koden kopierad",p_manual:"Kopiera texten ovan för hand.",p_here:"klistra in koden här",
-p_load:"läs in",p_ok:"framsteg sammanslagna",p_bad:"koden fungerade inte"
+p_load:"läs in",p_ok:"framsteg sammanslagna",p_bad:"koden fungerade inte",t_updated:"ny version redo"
 }};
 function lang(){return S.lang==="sv"?"sv":"en"}
 function T(k,...a){
@@ -1108,7 +1108,7 @@ function renderNav(){
   const tabs=[["hem",T("nav_home")],["kurs",T("nav_course")],["spel",T("nav_games")],["ord",T("nav_words")]];
   document.getElementById("nav").innerHTML=tabs.map(([k,l])=>'<button data-tab="'+k+'" class="'+(TAB===k?"on":"")+'">'+l+'</button>').join("");
 }
-function go(t){TAB=t;SESS=null;OPENMOD=null;document.onkeydown=null;render()}
+function go(t){TAB=t;SESS=null;OPENMOD=null;document.onkeydown=null;applyUpdate();render()}
 
 function render(){
   const sy=window.scrollY;
@@ -1479,6 +1479,7 @@ function renderDone(){
   V().innerHTML=h;
   document.getElementById("again").onclick=()=>{SESS=null;startNext()};
   document.getElementById("home").onclick=()=>go("hem");
+  applyUpdate();
 }
 
 document.getElementById("nav").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b)go(b.dataset.tab)});
@@ -1490,7 +1491,23 @@ document.getElementById("themebtn").onclick=()=>{
 
 document.addEventListener("click",e=>{const s=e.target.closest("[data-say]");if(s){e.stopPropagation();say(s.dataset.say)}},true);
 
-try{ if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js",{scope:"./"}).catch(()=>{}); }catch(e){}
+let PENDING_RELOAD=false;
+function applyUpdate(){ if(PENDING_RELOAD){PENDING_RELOAD=false;location.reload()} }
+try{
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js",{scope:"./"}).then(reg=>{
+      const poke=()=>{try{reg.update()}catch(e){}};
+      setInterval(poke,30*60*1000);
+      window.addEventListener("focus",poke);
+    }).catch(()=>{});
+    let refreshing=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{
+      if(refreshing)return; refreshing=true;
+      if(typeof SESS!=="undefined"&&SESS){PENDING_RELOAD=true;try{toast(T("t_updated"))}catch(e){}}
+      else location.reload();
+    });
+  }
+}catch(e){}
 
 (async()=>{
   initVoice();
