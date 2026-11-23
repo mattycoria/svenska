@@ -693,7 +693,7 @@ const L={
 en:{
 nav_home:"Home",nav_course:"Course",nav_games:"Games",nav_words:"Words",
 hero_start:"Time to begin",hero_going:"You're under way",hero_stick:"It's starting to stick",hero_nearly:"Nearly there",
-hero_sub:(a,b,c)=>a+" of "+b+" sections done · "+c+" words that stick",
+hero_sub:(a,b,c)=>a+" of "+b+" sections done · "+c+" words met",
 go:"carry on",back:"back",begin:"begin",resume:"carry on",check:"check",skip:"skip",next:"next",
 n_review:"review",n_forget:n=>n+" things are about to slip away",n_resume:"pick up where you left off",
 n_new:"new section",n_mixed:"mixed review",n_due:n=>n+" to review",
@@ -734,7 +734,7 @@ first_note:"Don\u2019t worry about the words you don\u2019t know yet. Get what y
 sv:{
 nav_home:"Hem",nav_course:"Kurs",nav_games:"Spel",nav_words:"Ord",
 hero_start:"Dags att börja",hero_going:"Du är igång",hero_stick:"Det börjar sitta",hero_nearly:"Nästan i mål",
-hero_sub:(a,b,c)=>a+" av "+b+" avsnitt klara · "+c+" ord som sitter",
+hero_sub:(a,b,c)=>a+" av "+b+" avsnitt klara · "+c+" ord du mött",
 go:"fortsätt",back:"tillbaka",begin:"börja",resume:"fortsätt",check:"kontrollera",skip:"hoppa över",next:"nästa",
 n_review:"repetition",n_forget:n=>n+" saker är på väg att glömmas",n_resume:"fortsätt där du slutade",
 n_new:"nytt avsnitt",n_mixed:"blandad repetition",n_due:n=>n+" att repetera",
@@ -770,7 +770,8 @@ set_prog:"Framsteg",p_copy:"kopiera kod",p_paste:"klistra in",
 p_copied:"koden kopierad",p_manual:"Kopiera texten ovan för hand.",p_here:"klistra in koden här",
 p_load:"läs in",p_ok:"framsteg sammanslagna",p_bad:"koden fungerade inte",t_updated:"ny version redo",sec_fix:"att rätta till",fix_count:n=>n+(n===1?" sak":" saker")+" du hade fel på",fix_go:"öva på dem",
 l_read:"läs och svara",read_again:"läs igen",sec_first:"läs det här först",sec_rules:"nu reglerna",
-first_note:"Strunta i orden du inte kan än. Ta det du förstår och läs vidare."
+first_note:"Strunta i orden du inte kan än. Ta det du förstår och läs vidare.",
+cando_note:"Gult betyder att du klarat det en gång. Grönt betyder att det kom tillbaka och du kunde det ändå."
 }};
 function lang(){return S.lang==="sv"?"sv":"en"}
 function T(k,...a){
@@ -814,9 +815,13 @@ function modProgress(m){
   const its=itemsOf(m), done=its.filter(it=>strength(it.id)>=1).length;
   return {done,total:its.length,pc:its.length?done/its.length:0};
 }
-function modDone(m){return modProgress(m).pc>=0.85}
+function modDone(m){return modProgress(m).pc>=0.999}
 function modStarted(m){return modProgress(m).done>0}
 
+function candoScore(id){
+  const st=candoState(id);
+  return st==="green"?1:st==="amber"?0.5:0;
+}
 function candoState(id){
   const ms=MODULES.filter(m=>m.cando.includes(id));
   if(!ms.length)return "lock";
@@ -1203,7 +1208,7 @@ function viewHem(){
     const p=modProgress(m), st=modDone(m)?"full":p.done?"part":"";
     return '<span class="mdot '+st+'" title="'+esc(m.sv)+'" style="--c:var(--h-'+HUES[i%5]+')"></span>';
   }).join("");
-  const words=MODULES.flatMap(m=>m.vocab).filter(v=>strength("v:"+v[0])>=2).length;
+  const words=allWords().filter(w=>rec(w.id)).length;
 
   let head='<div class="scene"></div><div class="hero">'+
     '<div class="ringwrap">'+ring(a,110,8,"teal")+'<div class="ringin"><b>'+a+'%</b><span>A1</span></div></div>'+
@@ -1221,14 +1226,14 @@ function viewHem(){
     const first=groups.findIndex(x=>x.lv==="A1"&&x.g.items.some(i=>candoState(i.id)!=="green"));
     OPENG=first<0?0:first;
   }
-  let body='<div class="sec">'+T("sec_cando")+'</div>';
+  let body='<div class="sec">'+T("sec_cando")+'</div><p class="firstnote" style="margin:-2px 0 6px">'+esc(T("cando_note"))+'</p>';
   groups.forEach((x,gi)=>{
     const hue=HUES[gi%5], icon=THEMEICON[gi%5], open=OPENG===gi;
     const done=x.g.items.filter(i=>candoState(i.id)==="green").length, tot=x.g.items.length;
     body+='<div class="grp'+(open?" open":"")+'" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')">'+
       '<button class="grphead" data-grp="'+gi+'"><span class="grpic">'+ico(icon)+'</span>'+
       '<span class="grpt">'+esc(lang()==="sv"?x.g.t:(x.g.ten||x.g.t))+'</span>'+
-      (x.lv==="A1"?'<span class="grpbar"><i style="width:'+Math.round(done/tot*100)+'%"></i></span><span class="grpn">'+done+'/'+tot+'</span>'
+      (x.lv==="A1"?'<span class="grpbar"><i style="width:'+Math.round(x.g.items.reduce((a,i)=>a+candoScore(i.id),0)/tot*100)+'%"></i></span><span class="grpn">'+done+'/'+tot+'</span>'
                   :'<span class="soon">'+x.lv+'</span>')+
       '<span class="chev">›</span></button>';
     if(open){
