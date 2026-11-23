@@ -158,6 +158,7 @@ input{font:inherit}
 .passage{border-left:2.5px solid var(--h-teal);padding:4px 0 4px 16px;margin-bottom:22px;font-size:21px;line-height:1.65}
 .pfoot{display:flex;align-items:center;gap:9px;margin-top:11px;font-size:15px;color:var(--tx3);font-style:italic}
 .rq{font-size:21px;margin-bottom:18px}
+.firstnote{margin:-8px 0 4px;font-size:16px;color:var(--tx3);font-style:italic}
 .prompt{font-size:27px;line-height:1.32;margin-bottom:24px}
 .subtle{font-size:17px;color:var(--tx3);font-style:italic;margin:-16px 0 18px}
 
@@ -727,7 +728,8 @@ off_no:"This browser cannot store it for offline use",
 set_prog:"Progress",p_copy:"copy code",p_paste:"paste code",
 p_copied:"code copied",p_manual:"Copy the text above by hand.",p_here:"paste the code here",
 p_load:"load it",p_ok:"progress merged",p_bad:"that code did not work",t_updated:"new version ready",sec_fix:"to put right",fix_count:n=>n+(n===1?" thing":" things")+" you got wrong",fix_go:"practise these",
-l_read:"read and answer",read_again:"read it again"
+l_read:"read and answer",read_again:"read it again",sec_first:"first, read this",sec_rules:"now the rules",
+first_note:"Don\u2019t worry about the words you don\u2019t know yet. Get what you can, then read on."
 },
 sv:{
 nav_home:"Hem",nav_course:"Kurs",nav_games:"Spel",nav_words:"Ord",
@@ -767,7 +769,8 @@ off_no:"Den här webbläsaren kan inte spara den offline",
 set_prog:"Framsteg",p_copy:"kopiera kod",p_paste:"klistra in",
 p_copied:"koden kopierad",p_manual:"Kopiera texten ovan för hand.",p_here:"klistra in koden här",
 p_load:"läs in",p_ok:"framsteg sammanslagna",p_bad:"koden fungerade inte",t_updated:"ny version redo",sec_fix:"att rätta till",fix_count:n=>n+(n===1?" sak":" saker")+" du hade fel på",fix_go:"öva på dem",
-l_read:"läs och svara",read_again:"läs igen"
+l_read:"läs och svara",read_again:"läs igen",sec_first:"läs det här först",sec_rules:"nu reglerna",
+first_note:"Strunta i orden du inte kan än. Ta det du förstår och läs vidare."
 }};
 function lang(){return S.lang==="sv"?"sv":"en"}
 function T(k,...a){
@@ -1336,7 +1339,14 @@ function viewOrd(){
 function renderModIntro(m){
   const p=modProgress(m), i=a1().indexOf(m), hue=HUES[(i<0?0:i)%5];
   let h='<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="iconbtn" id="back" style="margin-bottom:10px">←</button>'+
-    '<div class="introhead"><span class="mnum big">'+(i+1)+'</span><div><h2>'+esc(titleOf(m))+'</h2><p>'+esc(subOf(m))+'</p></div></div>'+
+    '<div class="introhead"><span class="mnum big">'+(i+1)+'</span><div><h2>'+esc(titleOf(m))+'</h2><p>'+esc(subOf(m))+'</p></div></div>';
+  if(m.read){
+    h+='<div class="sec">'+T("sec_first")+'</div>'+
+      '<div class="passage">'+esc(m.read.sv).replace(/\n/g,"<br>")+
+      (audioOn()?'<div class="pfoot">'+spk(m.read.sv)+'<span>'+T("read_again")+'</span></div>':"")+'</div>'+
+      '<p class="firstnote">'+esc(T("first_note"))+'</p>';
+  }
+  h+='<div class="sec">'+T("sec_rules")+'</div>'+
     '<div class="gram"><p class="lead">'+esc(m.intro)+'</p>'+
     '<ul class="rules">'+m.rules.map(r=>'<li>'+esc(r)+'</li>').join("")+'</ul></div>';
   h+='<div class="sec">'+T("sec_examples")+'</div>';
@@ -1408,7 +1418,7 @@ function startModule(m){
   const reading=unseen.filter(x=>x.kind==="rd").slice(0,3);
   const shaky=its.filter(it=>{const r=rec(it.id);return r&&strength(it.id)<1}).slice(0,6);
   const due_=its.filter(it=>{const r=rec(it.id);return r&&strength(it.id)>=1&&r.due<=now()}).slice(0,4);
-  let pick=fresh.concat(shaky,due_).slice(0,9).concat(reading);
+  let pick=reading.concat(fresh.concat(shaky,due_).slice(0,9));
   if(!pick.length)pick=shuffle(its).slice(0,8);
   if(!pick.length){toast(T("t_moddone"));go("kurs");return}
   if(!S.mods[m.id])S.mods[m.id]={started:now()};
