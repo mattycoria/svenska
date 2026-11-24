@@ -229,6 +229,8 @@ input{font:inherit}
 .cardset{margin-top:34px}
 .cardnote{margin-top:14px}
 .cspk{display:flex;align-items:center;gap:9px;justify-content:center;font-size:17px;color:var(--tx3);font-style:italic;margin-top:2px}
+.undo{display:block;width:100%;text-align:center;margin-top:18px;font-size:16px;color:var(--tx3);font-style:italic;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.undo:hover{color:var(--tx2)}
 .triword{font-size:34px;text-align:center;margin-top:34px;display:flex;align-items:center;justify-content:center;gap:10px}
 .trien{font-size:20px;color:var(--tx2);font-style:italic;text-align:center;margin-top:8px}
 .trstart{margin-top:0;margin-bottom:16px;border-color:var(--h-teal);color:var(--tx)}
@@ -722,7 +724,7 @@ const L={
 en:{
 nav_home:"Home",nav_course:"Course",nav_games:"Games",nav_words:"Words",nav_cards:"Cards",
 c_yes:"knew it",c_no:"didn't know it",c_more:"another twenty",
-c_tapcard:"tap the card",
+c_tapcard:"tap the card",undo:l=>"undo \u201c"+l+"\u201d",
 tr_title:"Sorting",tr_left:"to go",tr_yes:"I know this",tr_no:"not this one",tr_stop:"stop for now",
 tr_start:n=>"Sort the "+n+" words you haven't met yet",tr_none:"nothing left to sort",tr_known:"known",
 tr_done:(k,n)=>k+" marked known, "+n+" put in the pile to learn.",
@@ -772,7 +774,7 @@ first_note:"Don\u2019t worry about the words you don\u2019t know yet. Get what y
 sv:{
 nav_home:"Hem",nav_course:"Kurs",nav_games:"Spel",nav_words:"Ord",nav_cards:"Kort",
 c_yes:"kunde det",c_no:"kunde inte",c_more:"tjugo till",
-c_tapcard:"tryck på kortet",
+c_tapcard:"tryck på kortet",undo:l=>"ångra \u201d"+l+"\u201d",
 tr_title:"Sortering",tr_left:"kvar",tr_yes:"jag kan det här",tr_no:"inte det här",tr_stop:"sluta för nu",
 tr_start:n=>"Sortera de "+n+" ord du inte mött än",tr_none:"inget kvar att sortera",tr_known:"kan",
 tr_done:(k,n)=>k+" markerade som kända, "+n+" lades i högen att lära.",
@@ -951,6 +953,16 @@ function importCode(code){
     if(d.started&&(!S.started||d.started<S.started))S.started=d.started;
     save(); return true;
   }catch(e){return false}
+}
+let UNDO=null;
+function snapItem(id){const r=S.items[id];return r?JSON.parse(JSON.stringify(r)):null}
+function setUndo(id,label,back){UNDO={id,prev:snapItem(id),label,back}}
+function runUndo(){
+  if(!UNDO)return false;
+  const u=UNDO; UNDO=null;
+  if(u.prev)S.items[u.id]=u.prev; else delete S.items[u.id];
+  save(); if(u.back)u.back();
+  return true;
 }
 function save(){
   if(saveT)clearTimeout(saveT);
@@ -1254,14 +1266,19 @@ function viewCards(){
     '<div class="setrow cardset"><span>'+T("c_dir")+'</span><span class="seg">'+
       '<button class="segb'+(svFirst?" on":"")+'" data-cd="sv">'+T("c_sv")+'</button>'+
       '<button class="segb'+(!svFirst?" on":"")+'" data-cd="en">'+T("c_en")+'</button></span></div>'+
+    (UNDO?'<button class="undo" id="undo">'+esc(T("undo",UNDO.label))+'</button>':"")+
     '<p class="firstnote cardnote">'+esc(T("c_note"))+'</p></div>';
 
   const card=document.getElementById("card"), btns=document.getElementById("cbtns");
   const setFlip=on=>{CARDS.flip=on;card.classList.toggle("flipped",on);btns.classList.toggle("shown",on)};
-  setFlip(false);
+  setFlip(!!CARDS.reflip); CARDS.reflip=false;
+  const ub=document.getElementById("undo"); if(ub)ub.onclick=e=>{e.stopPropagation();runUndo()};
   card.onclick=()=>setFlip(!CARDS.flip);
   card.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setFlip(!CARDS.flip)}};
-  const next=g=>{grade(w.id,g); g?CARDS.right++:CARDS.wrong++; CARDS.i++; CARDS.flip=false; save(); viewCards()};
+  const next=g=>{
+    setUndo(w.id,g?T("c_yes"):T("c_no"),()=>{CARDS.i--; g?CARDS.right--:CARDS.wrong--; CARDS.reflip=true; viewCards()});
+    grade(w.id,g); g?CARDS.right++:CARDS.wrong++; CARDS.i++; CARDS.flip=false; save(); viewCards();
+  };
   document.getElementById("cyes").onclick=e=>{e.stopPropagation(); if(CARDS.flip)next(2)};
   document.getElementById("cno").onclick=e=>{e.stopPropagation(); if(CARDS.flip)next(0)};
   V().querySelectorAll("[data-cd]").forEach(b=>b.onclick=e=>{
@@ -1311,11 +1328,19 @@ function viewTriage(){
     '<div class="cbtns shown" style="margin-top:30px">'+
       '<button class="go sub" id="trno">'+T("tr_no")+'</button>'+
       '<button class="go" id="tryes"><span>'+T("tr_yes")+'</span></button></div>'+
+    (UNDO?'<button class="undo" id="undo">'+esc(T("undo",UNDO.label))+'</button>':"")+
     '<button class="go sub" id="trstop" style="margin-top:22px">'+T("tr_stop")+'</button>'+
     '<p class="firstnote">'+esc(T("tr_note"))+'</p></div>';
   const step=()=>{TRI.i++;save();viewTriage()};
-  document.getElementById("tryes").onclick=()=>{declareKnown(w.id);TRI.known++;step()};
-  document.getElementById("trno").onclick=()=>{declareUnknown(w.id);TRI.no++;step()};
+  document.getElementById("tryes").onclick=()=>{
+    setUndo(w.id,T("tr_yes"),()=>{TRI.i--;TRI.known--;viewTriage()});
+    declareKnown(w.id);TRI.known++;step();
+  };
+  document.getElementById("trno").onclick=()=>{
+    setUndo(w.id,T("tr_no"),()=>{TRI.i--;TRI.no--;viewTriage()});
+    declareUnknown(w.id);TRI.no++;step();
+  };
+  const ub=document.getElementById("undo"); if(ub)ub.onclick=()=>runUndo();
   document.getElementById("trstop").onclick=()=>{TRI=null;save();go("ord")};
 }
 function triageDone(){
