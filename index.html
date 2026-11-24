@@ -233,6 +233,7 @@ input{font:inherit}
 .undo:hover{color:var(--tx2)}
 .triword{font-size:34px;text-align:center;margin-top:34px;display:flex;align-items:center;justify-content:center;gap:10px}
 .trien{font-size:20px;color:var(--tx2);font-style:italic;text-align:center;margin-top:8px;min-height:30px}
+.trinote{margin-top:24px}
 .tripeek{display:block;margin:8px auto 0;font-size:17px;color:var(--tx3);font-style:italic;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line);min-height:30px}
 .tripeek:hover{color:var(--tx2)}
 .trstart{margin-top:0;margin-bottom:16px;border-color:var(--h-teal);color:var(--tx)}
@@ -1334,7 +1335,7 @@ function viewTriage(){
       '<button class="go" id="tryes"><span>'+T("tr_yes")+'</span></button></div>'+
     (UNDO?'<button class="undo" id="undo">'+esc(T("undo",UNDO.label))+'</button>':"")+
     '<button class="go sub" id="trstop" style="margin-top:22px">'+T("tr_stop")+'</button>'+
-    '<p class="firstnote">'+esc(T("tr_note"))+'</p></div>';
+    '<p class="firstnote trinote">'+esc(T("tr_note"))+'</p></div>';
   const step=()=>{TRI.i++;TRI.peek=false;save();viewTriage()};
   const pk=document.getElementById("peek"); if(pk)pk.onclick=()=>{TRI.peek=true;viewTriage()};
   document.getElementById("tryes").onclick=()=>{
