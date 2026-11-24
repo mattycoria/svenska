@@ -232,7 +232,9 @@ input{font:inherit}
 .undo{display:block;width:100%;text-align:center;margin-top:18px;font-size:16px;color:var(--tx3);font-style:italic;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
 .undo:hover{color:var(--tx2)}
 .triword{font-size:34px;text-align:center;margin-top:34px;display:flex;align-items:center;justify-content:center;gap:10px}
-.trien{font-size:20px;color:var(--tx2);font-style:italic;text-align:center;margin-top:8px}
+.trien{font-size:20px;color:var(--tx2);font-style:italic;text-align:center;margin-top:8px;min-height:30px}
+.tripeek{display:block;margin:8px auto 0;font-size:17px;color:var(--tx3);font-style:italic;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line);min-height:30px}
+.tripeek:hover{color:var(--tx2)}
 .trstart{margin-top:0;margin-bottom:16px;border-color:var(--h-teal);color:var(--tx)}
 .pips.dec .pip.f{background:var(--h-blue);border-color:var(--h-blue)}
 .donewrap{padding-top:6px;text-align:center}
@@ -725,10 +727,10 @@ en:{
 nav_home:"Home",nav_course:"Course",nav_games:"Games",nav_words:"Words",nav_cards:"Cards",
 c_yes:"knew it",c_no:"didn't know it",c_more:"another twenty",
 c_tapcard:"tap the card",undo:l=>"undo \u201c"+l+"\u201d",
-tr_title:"Sorting",tr_left:"to go",tr_yes:"I know this",tr_no:"not this one",tr_stop:"stop for now",
+tr_title:"Sorting",tr_left:"to go",tr_yes:"I know this",tr_no:"not this one",tr_stop:"stop for now",tr_peek:"what does it mean?",
 tr_start:n=>"Sort the "+n+" words you haven't met yet",tr_none:"nothing left to sort",tr_known:"known",
 tr_done:(k,n)=>k+" marked known, "+n+" put in the pile to learn.",
-tr_note:"Words you know go to two pips and come back in a couple of weeks rather than tomorrow, so the basics still get checked. The rest go to the front of the queue.",c_dir:"Show me",c_sv:"Swedish",c_en:"English",
+tr_note:"Decide before you look. If you check the meaning first, you are sorting what you recognise rather than what you know.",c_dir:"Show me",c_sv:"Swedish",c_en:"English",
 c_due:"due back",c_shaky:"shaky",c_new:"new",c_known:"known",c_never:"not met yet",c_today:"seen today",
 c_ago:n=>"last seen "+n+(n===1?" day":" days")+" ago",
 c_note:"The deck is dealt worst first: overdue, then shaky, then new. English first is the harder way round and the one that helps you speak.",
@@ -775,10 +777,10 @@ sv:{
 nav_home:"Hem",nav_course:"Kurs",nav_games:"Spel",nav_words:"Ord",nav_cards:"Kort",
 c_yes:"kunde det",c_no:"kunde inte",c_more:"tjugo till",
 c_tapcard:"tryck på kortet",undo:l=>"ångra \u201d"+l+"\u201d",
-tr_title:"Sortering",tr_left:"kvar",tr_yes:"jag kan det här",tr_no:"inte det här",tr_stop:"sluta för nu",
+tr_title:"Sortering",tr_left:"kvar",tr_yes:"jag kan det här",tr_no:"inte det här",tr_stop:"sluta för nu",tr_peek:"vad betyder det?",
 tr_start:n=>"Sortera de "+n+" ord du inte mött än",tr_none:"inget kvar att sortera",tr_known:"kan",
 tr_done:(k,n)=>k+" markerade som kända, "+n+" lades i högen att lära.",
-tr_note:"Ord du kan får två prickar och kommer tillbaka om ett par veckor i stället för i morgon. Resten hamnar först i kön.",c_dir:"Visa",c_sv:"Svenska",c_en:"Engelska",
+tr_note:"Bestäm dig innan du tittar. Kollar du betydelsen först sorterar du det du känner igen, inte det du kan.",c_dir:"Visa",c_sv:"Svenska",c_en:"Engelska",
 c_due:"dags igen",c_shaky:"osäkert",c_new:"nytt",c_known:"kan",c_never:"inte mött än",c_today:"sett i dag",
 c_ago:n=>"sist sett för "+n+(n===1?" dag":" dagar")+" sedan",
 c_note:"Korten kommer i tur: försenade först, sedan osäkra, sedan nya. Engelska först är svårare och hjälper dig att tala.",
@@ -1304,7 +1306,7 @@ function triagePool(){
 function startTriage(){
   const pool=triagePool();
   if(!pool.length){toast(T("tr_none"));return}
-  TRI={pool,i:0,known:0,no:0};
+  TRI={pool,i:0,known:0,no:0,peek:false};
   render();
 }
 function declareKnown(id){
@@ -1324,20 +1326,23 @@ function viewTriage(){
     '<div class="exhead"><span>'+T("tr_title")+'</span><span>'+left+' '+T("tr_left")+'</span></div>'+
     '<div class="extop"><i style="width:'+Math.round(TRI.i/TRI.pool.length*100)+'%"></i></div>'+
     '<div class="triword">'+esc(w.sv)+(audioOn()?spk(bare(w.sv),"inline"):"")+'</div>'+
-    '<div class="trien">'+esc(w.en)+'</div>'+
+    (TRI.peek
+      ? '<div class="trien">'+esc(w.en)+'</div>'
+      : '<button class="tripeek" id="peek">'+T("tr_peek")+'</button>')+
     '<div class="cbtns shown" style="margin-top:30px">'+
       '<button class="go sub" id="trno">'+T("tr_no")+'</button>'+
       '<button class="go" id="tryes"><span>'+T("tr_yes")+'</span></button></div>'+
     (UNDO?'<button class="undo" id="undo">'+esc(T("undo",UNDO.label))+'</button>':"")+
     '<button class="go sub" id="trstop" style="margin-top:22px">'+T("tr_stop")+'</button>'+
     '<p class="firstnote">'+esc(T("tr_note"))+'</p></div>';
-  const step=()=>{TRI.i++;save();viewTriage()};
+  const step=()=>{TRI.i++;TRI.peek=false;save();viewTriage()};
+  const pk=document.getElementById("peek"); if(pk)pk.onclick=()=>{TRI.peek=true;viewTriage()};
   document.getElementById("tryes").onclick=()=>{
-    setUndo(w.id,T("tr_yes"),()=>{TRI.i--;TRI.known--;viewTriage()});
+    setUndo(w.id,T("tr_yes"),()=>{TRI.i--;TRI.known--;TRI.peek=true;viewTriage()});
     declareKnown(w.id);TRI.known++;step();
   };
   document.getElementById("trno").onclick=()=>{
-    setUndo(w.id,T("tr_no"),()=>{TRI.i--;TRI.no--;viewTriage()});
+    setUndo(w.id,T("tr_no"),()=>{TRI.i--;TRI.no--;TRI.peek=true;viewTriage()});
     declareUnknown(w.id);TRI.no++;step();
   };
   const ub=document.getElementById("undo"); if(ub)ub.onclick=()=>runUndo();
