@@ -896,6 +896,7 @@ function T(k,...a){
 function titleOf(o){return lang()==="sv"?o.sv:(o.en||o.sv)}
 function subOf(o){return lang()==="sv"?(o.en||""):(o.sv||"")}
 Object.assign(L.en,{
+k_passed_s:"passed",s_left:"Leftovers",s_left_b:"test questions you missed or haven\u2019t seen yet",
 t_next:"next question",t_finish:"finish the test",t_pick:"Pick an answer first",t_leave_q:"Leave the test? This attempt won\u2019t count.",t_stay:"stay",t_leave_yes:"yes, leave",
 cando_note:"Each one turns green once you\u2019ve passed every chapter that covers it.",
 hero_sub:(a,b,c)=>a+" of "+b+" chapters passed · "+c+" words met",n_new:"new chapter",
@@ -924,6 +925,7 @@ pic_ex:"explore",pic_te:"test me",pic_aria:"a drawing you can tap",pic_where:"Va
 pic_from:b=>"from "+b,pic_yes:"Ja!",pic_no:s=>"That’s "+s+". Try again: var är"
 });
 Object.assign(L.sv,{
+k_passed_s:"klart",s_left:"Rester",s_left_b:"provfrågor du missade eller inte har sett än",
 t_next:"nästa fråga",t_finish:"lämna in provet",t_pick:"Välj ett svar först",t_leave_q:"Lämna provet? Försöket räknas inte.",t_stay:"stanna",t_leave_yes:"ja, lämna",
 cando_note:"Varje punkt blir grön när du har klarat alla kapitel som tar upp den.",
 hero_sub:(a,b,c)=>a+" av "+b+" kapitel klara · "+c+" ord mötta",n_new:"nytt kapitel",
@@ -3013,7 +3015,7 @@ function mcq(x){ // [q,[correct,...],why?,extra?] -> {q,o,a,why}
 })();
 function chapter(id){return CH.find(c=>c.id===id)}
 const DAY=86400000, IV=[1,2,4,9,20,45,95,180];
-let S={v:2,items:{},cando:{},mods:{},tests:{},chs:{},streakDays:[],theme:"light",lang:"en",started:0};
+let S={v:2,items:{},cando:{},mods:{},tests:{},chs:{},tq:{},streakDays:[],theme:"light",lang:"en",started:0};
 let db=null,uid=null,sample=null,saveT=null,booted=false;
 
 function now(){return Date.now()}
@@ -3026,9 +3028,25 @@ function itemsOf(m){
   m.dr.forEach((d,i)=>out.push({id:m.id+"#"+i,mid:m.id,kind:"dr",i}));
   m.vocab.forEach((v,i)=>out.push({id:"v:"+v[0],mid:m.id,kind:"vo",i}));
   if(m.read)m.read.q.forEach((q,i)=>out.push({id:m.id+"#r"+i,mid:m.id,kind:"rd",i}));
+  if(m.test)testIds(m).forEach(t=>{ if(S.items[t.id]) out.push({id:t.id,mid:m.id,kind:"tq"}) });
   return out;
 }
-function allItems(){return MODULES.flatMap(itemsOf)}
+function allItems(){return CH.flatMap(itemsOf)}
+/* every test question has a stable id: k1#t5 (main pool) or k1#p0_4 (passage 0, question 4) */
+function testIds(c){
+  const out=c.test.q.map((q,i)=>({id:c.id+"#t"+i,raw:q,c}));
+  c.test.p.forEach((P,pi)=>P.q.forEach((q,j)=>out.push({id:c.id+"#p"+pi+"_"+j,raw:q,c,P})));
+  return out;
+}
+function testById(id){
+  const c=mod(id.split("#")[0]); if(!c)return null;
+  return testIds(c).find(t=>t.id===id)||null;
+}
+function leftovers(c){
+  const tq=S.tq||{};
+  return testIds(c).filter(t=>!tq[t.id]||!tq[t.id].ok);
+}
+function noteTq(id,ok){ (S.tq=S.tq||{})[id]={ok:!!ok,at:now(),n:((S.tq[id]||{}).n||0)+1} }
 function rec(id){return S.items[id]||null}
 function strength(id){const r=rec(id);if(!r)return 0;if(r.n>=4)return 3;if(r.n>=2)return 2;if(r.n>=1)return 1;return 0}
 
@@ -3038,7 +3056,9 @@ function grade(id,g){
   if(g===2){r.n=Math.min((r.n||0)+1,IV.length-1);r.due=now()+IV[r.n]*DAY}
   else if(g===1){r.due=now()+DAY}
   else {r.lapse=(r.lapse||0)+1;r.n=Math.max(0,(r.n||0)-2);r.due=now()+DAY*0.3}
-  S.items[id]=r; save();
+  S.items[id]=r;
+  if(/#(t|p)\d/.test(id))noteTq(id,g===2);
+  save();
 }
 
 function due(){const t=now();return allItems().filter(it=>{const r=rec(it.id);return r&&r.due<=t})}
@@ -3686,7 +3706,7 @@ function viewKurs(){
       '<span class="mnum">'+(done?TICK:c.n)+'</span><span class="mgrow">'+
       '<h3>'+esc(titleOf(c))+'</h3><p>'+esc(chSub(c))+'</p>'+
       (done?'':'<span class="mbar"><i style="width:'+pc+'%"></i></span>')+'</span>'+
-      '<span class="mpc">'+(done?'<span class="stampmini">'+t.best+'/'+TESTLEN+'</span>':t?t.best+'/'+TESTLEN:pc?pc+'%':'')+'</span></button>';
+      '<span class="mpc">'+(done?'<span class="stampmini">'+T("k_passed_s")+'</span>':t?t.best+'/'+TESTLEN:pc?pc+'%':'')+'</span></button>';
   });
   h+='<div class="sec">'+T("sec_later")+'</div>';
   SOON.forEach(s=>{h+='<div class="card soonc"><h3>'+esc(titleOf(s))+'<span class="soon">'+s.lvl+'</span></h3><p>'+esc(subOf(s))+'</p></div>'});
@@ -3712,20 +3732,22 @@ function renderChapter(c){
   const wp=wordsPc(c), pp=practicePc(c);
   let h='<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="iconbtn" id="back" style="margin-bottom:10px">←</button>'+
     '<div class="introhead"><span class="mnum big">'+c.n+'</span><div><h2>'+esc(titleOf(c))+'</h2><p>'+esc(chSub(c))+'</p></div></div>';
-  if(done)h+='<div class="stamp"><b>'+T("k_passed")+'</b><span>'+esc(T("k_best",t.best,TESTLEN))+'</span></div>';
+  if(done)h+='<div class="stamp"><b>'+T("k_passed")+'</b></div>';
   h+=secRow("read",1,T("s_read"),c.read.t,readDone(c)?"done":"")+
     secRow("words",2,T("s_words"),T("s_words_n",c.vocab.length,Math.round(wp*100)),wp>=0.999?"done":"",bar(wp))+
     secRow("rules",3,T("s_rules"),T("s_rules_b"),cs.rules?"done":"")+
     secRow("practice",4,T("s_practice"),T("s_practice_n",Math.round(pp*100)),pp>=0.999?"done":"",bar(pp))+
     secRow("norden",5,T("s_norden"),c.norden.t,cs.norden?"done":"")+
     secRow("use",6,T("s_use"),T("s_use_b"),cs.use?"done":"")+
-    secRow("test",7,T("s_test"),t?T("s_test_best",t.best,TESTLEN,t.n):T("s_test_b",TESTLEN,PASSMARK),done?"done":"");
+    secRow("test",7,T("s_test"),t?T("s_test_best",t.best,TESTLEN,t.n):T("s_test_b",TESTLEN,PASSMARK),done?"done":"")+
+    (done&&leftovers(c).length?secRow("left","+",T("s_left"),T("s_left_b"),""):"");
   h+='</div>';
   V().innerHTML=h;
   document.getElementById("back").onclick=()=>go("kurs");
   V().querySelectorAll("[data-sec]").forEach(b=>b.onclick=()=>{
     const k=b.dataset.sec;
     if(k==="practice")return startPractice(c);
+    if(k==="left")return startLeftovers(c);
     CHSEC=k;render();window.scrollTo(0,0);
   });
 }
@@ -3853,13 +3875,17 @@ function startWords(c){
 /* ---------- the chapter test ---------- */
 function startTest(c){
   const old=testRec(c)||{}, ps=c.test.p;
+  const tq=S.tq||{}, fresh=i=>ps[i].q.filter((x,j)=>!tq[c.id+"#p"+i+"_"+j]).length;
   let pi=Math.floor(Math.random()*ps.length);
   if(ps.length>1&&pi===old.lastp)pi=(pi+1)%ps.length;
+  if(ps.length>1&&!fresh(pi)&&fresh((pi+1)%ps.length))pi=(pi+1)%ps.length;
   const P=ps[pi];
-  const pq=P.q.map(x=>Object.assign(mcq(x),{p:P}));
+  const pq=P.q.map((x,j)=>Object.assign(mcq(x),{p:P,id:c.id+"#p"+pi+"_"+j}));
   const others=CH.filter(x=>x!==c&&modDone(x));
-  const cum=others.length?shuffle(others.flatMap(x=>x.test.q.map(q=>({q,ch:x})))).slice(0,4).map(o=>Object.assign(mcq(o.q),{from:o.ch})):[];
-  const own=shuffle(c.test.q).slice(0,TESTLEN-pq.length-cum.length).map(mcq);
+  const cum=others.length?shuffle(others.flatMap(x=>x.test.q.map((q,i)=>({q,ch:x,id:x.id+"#t"+i})))).slice(0,4).map(o=>Object.assign(mcq(o.q),{from:o.ch,id:o.id})):[];
+  const pool=c.test.q.map((q,i)=>({q,id:c.id+"#t"+i})), rank=o=>!tq[o.id]?0:!tq[o.id].ok?1:2;
+  const ordered=[0,1,2].flatMap(r=>shuffle(pool.filter(o=>rank(o)===r)));
+  const own=ordered.slice(0,TESTLEN-pq.length-cum.length).map(o=>Object.assign(mcq(o.q),{id:o.id}));
   TEST={c,pi,qs:pq.concat(shuffle(own.concat(cum))),i:0,ans:[]};
   LEAVE=false; OPENMOD=null; CHSEC=null; S.lastch=c.id; render(); window.scrollTo(0,0);
 }
@@ -3899,6 +3925,8 @@ function renderTest(){
 function finishTest(){
   const c=TEST.c, qs=TEST.qs, n=qs.filter((q,i)=>TEST.ans[i]===q.a).length, pass=n>=PASSMARK;
   const old=testRec(c)||{};
+  qs.forEach((q,i)=>{ if(!q.id)return; const ok=TEST.ans[i]===q.a;
+    if(!ok)grade(q.id,0); else { if(S.items[q.id])grade(q.id,2); else noteTq(q.id,true); } });
   S.tests=S.tests||{};
   S.tests[c.id]={best:Math.max(old.best||0,n),last:n,n:(old.n||0)+1,pass:!!(old.pass||pass),lastp:TEST.pi,at:now(),first:old.first||(pass?now():0)};
   save();
@@ -3928,6 +3956,20 @@ function renderTestResult(){
   V().innerHTML=h;
   document.getElementById("tagain").onclick=()=>startTest(c);
   document.getElementById("tback").onclick=()=>{TEST=null;openChapter(c)};
+}
+
+/* leftovers: questions from a passed chapter's test that were wrong or never came up */
+function startLeftovers(c){
+  const tq=S.tq||{}, left=leftovers(c);
+  const pick=shuffle(left.filter(t=>tq[t.id])).concat(shuffle(left.filter(t=>!tq[t.id]))).slice(0,10);
+  chSession(c,pick.map(t=>({id:t.id,mid:c.id,kind:"tq"})),T("s_left"),"left");
+}
+/* one-off: the three chapter 1 questions missed on 25/11/26, from Guillermo's screenshot */
+function seedChapterOne(){
+  if(S.seed1||!testRec(mod("k1")))return;
+  const want=["Får man ha en katt i lägenheten?","Mattan ligger på ___. (the floor)","Which one is an ett-word?"];
+  testIds(mod("k1")).forEach(t=>{ if(want.includes(t.raw[0]))grade(t.id,0) });
+  S.seed1=1; save();
 }
 let TAB="hem", SESS=null, OPENMOD=null;
 const V=()=>document.getElementById("view");
@@ -4144,6 +4186,9 @@ function typingRate(){return S.typing==="off"?0:S.typing==="some"?0.45:0.18}
 function buildQ(it){
   const m=mod(it.mid);
   let q;
+  if(it.kind==="tq"){const t=testById(it.id), x=mcq(t.raw);
+    if(t.P)return {t:"read",p:t.P.sv,q:x.q,o:x.o,a:x.a,why:x.why,id:it.id,mid:it.mid};
+    return {t:"choice",q:x.q,o:x.o,a:x.a,why:x.why,id:it.id,mid:it.mid};}
   if(it.kind==="rd"){const r=m.read.q[it.i];
     return {t:"read",p:m.read.sv,q:r.q,o:r.o,a:r.a,id:it.id,mid:it.mid};}
   if(it.kind==="dr"){q=Object.assign({},m.dr[it.i],{id:it.id,mid:it.mid})}
@@ -4362,7 +4407,7 @@ function renderDone(){
         (x.why?'<div class="misswhy">'+esc(x.why)+'</div>':"")+'</div>';
     });
   } else if(t) h+='<div class="fincard ok"><b>'+T("d_clean")+'</b><p>'+T("d_clean_b")+'</p></div>';
-  h+='<button class="go" id="again"><span>'+(SESS.kind==="practice"||SESS.kind==="words"?T("d_more"):SESS.kind==="read"?T("d_reread"):T("go"))+'</span><span class="goarr">→</span></button>'+
+  h+='<button class="go" id="again"><span>'+(SESS.kind==="practice"||SESS.kind==="words"||SESS.kind==="left"?T("d_more"):SESS.kind==="read"?T("d_reread"):T("go"))+'</span><span class="goarr">→</span></button>'+
      '<button class="go sub" id="home">'+(SESS.mid?T("t_tochapter"):T("back"))+'</button></div></div>';
   V().innerHTML=h;
   const back=SESS.mid?mod(SESS.mid):null;
@@ -4370,6 +4415,7 @@ function renderDone(){
   document.getElementById("again").onclick=()=>{SESS=null;
     if(back&&kind==="practice")return startPractice(back);
     if(back&&kind==="words")return startWords(back);
+    if(back&&kind==="left")return leftovers(back).length?startLeftovers(back):openChapter(back);
     if(back&&kind==="read")return openChapter(back,"read");
     startNext()};
   document.getElementById("home").onclick=()=>{if(back){SESS=null;openChapter(back)}else go("hem")};
@@ -4407,6 +4453,7 @@ try{
   initVoice();
   const t=setTimeout(()=>{if(!booted){booted=true;render()}},10000);
   await load();
+  seedChapterOne();
   clearTimeout(t);
   if(!booted){booted=true;
     if(S.theme)document.documentElement.setAttribute("data-theme",S.theme);
