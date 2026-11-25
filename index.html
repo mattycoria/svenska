@@ -324,7 +324,7 @@ body{font-size:18px}
 }
 .go+.firstnote{margin-top:16px}
 .tnav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
-.tnav .tnext{flex:1;margin:0}.tnext.dim{opacity:.45}
+.tnav .tnext{flex:1;margin:0}.tnext.dim,.go.dim{opacity:.45}
 .tleave{margin-top:70px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
 .tleave p{font-size:18px;color:var(--tx2);margin:0 0 12px}.tleaveb{display:flex;gap:12px;justify-content:center}
 .key.warn{border-color:var(--h-coral);color:var(--h-coral)}
@@ -896,7 +896,7 @@ function T(k,...a){
 function titleOf(o){return lang()==="sv"?o.sv:(o.en||o.sv)}
 function subOf(o){return lang()==="sv"?(o.en||""):(o.sv||"")}
 Object.assign(L.en,{
-k_passed_s:"passed",s_left:"Leftovers",s_left_b:"test questions you missed or haven\u2019t seen yet",
+k_passed_s:"passed",s_left:"Catch-up",s_left_b:"test questions you missed or haven\u2019t seen yet",
 t_next:"next question",t_finish:"finish the test",t_pick:"Pick an answer first",t_leave_q:"Leave the test? This attempt won\u2019t count.",t_stay:"stay",t_leave_yes:"yes, leave",
 cando_note:"Each one turns green once you\u2019ve passed every chapter that covers it.",
 hero_sub:(a,b,c)=>a+" of "+b+" chapters passed · "+c+" words met",n_new:"new chapter",
@@ -925,7 +925,7 @@ pic_ex:"explore",pic_te:"test me",pic_aria:"a drawing you can tap",pic_where:"Va
 pic_from:b=>"from "+b,pic_yes:"Ja!",pic_no:s=>"That’s "+s+". Try again: var är"
 });
 Object.assign(L.sv,{
-k_passed_s:"klart",s_left:"Rester",s_left_b:"provfrågor du missade eller inte har sett än",
+k_passed_s:"klart",s_left:"Ikapp",s_left_b:"provfrågor du missade eller inte har sett än",
 t_next:"nästa fråga",t_finish:"lämna in provet",t_pick:"Välj ett svar först",t_leave_q:"Lämna provet? Försöket räknas inte.",t_stay:"stanna",t_leave_yes:"ja, lämna",
 cando_note:"Varje punkt blir grön när du har klarat alla kapitel som tar upp den.",
 hero_sub:(a,b,c)=>a+" av "+b+" kapitel klara · "+c+" ord mötta",n_new:"nytt kapitel",
@@ -4284,7 +4284,8 @@ function renderSession(){
   V().innerHTML='<div class="ex fadein pad"><div class="exhead"><span>'+esc(SESS.title)+'</span><span>'+(SESS.i+1)+' / '+SESS.q.length+'</span></div>'+
     '<div class="extop"><i style="width:'+pc+'%"></i></div>'+body+
     '<div id="errslot"></div>'+
-    ((q.t==="order"||q.t==="listen"||typed)?'<button class="go" id="chk">'+T("check")+'</button>':"")+keys+'</div>';
+    ((q.t==="order"||q.t==="listen"||typed)?'<button class="go" id="chk">'+T("check")+'</button>':
+     (q.t==="choice"||q.t==="gender"||q.t==="read")?'<button class="go dim" id="chk">'+T("check")+'</button>':"")+keys+'</div>';
   wire(q);
 }
 
@@ -4320,13 +4321,21 @@ function wire(q){
       submit(q,got);
     };
   } else if(q.t==="choice"||q.t==="gender"||q.t==="read"){
+    let picked=null; const chk=document.getElementById("chk");
     document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
-      const i=+b.dataset.o, ok=i===q.a;
-      document.querySelectorAll(".opt").forEach((x,j)=>{if(j===q.a)x.classList.add("right");else if(j===i&&!ok)x.classList.add("wrong");x.onclick=null});
+      picked=+b.dataset.o;
+      document.querySelectorAll(".opt").forEach(x=>x.classList.toggle("picked",x===b));
+      chk.classList.remove("dim");
+    });
+    chk.onclick=()=>{
+      if(picked==null)return showErr(T("t_pick"));
+      const i=picked, ok=i===q.a;
+      chk.remove();
+      document.querySelectorAll(".opt").forEach((x,j)=>{x.classList.remove("picked");if(j===q.a)x.classList.add("right");else if(j===i&&!ok)x.classList.add("wrong");x.onclick=null});
       grade(q.id,ok?2:0);
       if(ok)SESS.right++;else{SESS.wrong++;noteMiss(q,q.o?q.o[i]:(i?"ett":"en")+" "+q.w)}
       showFb(q,{r:ok?"ok":"no",a:correctOf(q)});
-    });
+    };
   } else {
     const ti=document.getElementById("ti");
     if(ti){ti.focus();ti.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();e.stopPropagation();const c=document.getElementById("chk");if(c)c.click()}}}
