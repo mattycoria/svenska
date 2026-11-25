@@ -328,6 +328,8 @@ body{font-size:18px}
 .tleave{margin-top:70px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
 .tleave p{font-size:18px;color:var(--tx2);margin:0 0 12px}.tleaveb{display:flex;gap:12px;justify-content:center}
 .key.warn{border-color:var(--h-coral);color:var(--h-coral)}
+.backbtn{display:inline-flex;align-items:center;gap:10px;font:inherit;font-size:19px;color:var(--tx);background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:9px 18px 9px 14px;margin:2px 0 16px;cursor:pointer}
+.backbtn .barr{font-size:24px;line-height:1}
 .secrow{display:flex;align-items:center;gap:14px;padding:13px 16px}
 .secrow b{font-weight:400;font-size:20px;display:block}
 .secsub{display:block;font-size:16px;color:var(--tx2);font-style:italic;line-height:1.35}
@@ -896,6 +898,7 @@ function T(k,...a){
 function titleOf(o){return lang()==="sv"?o.sv:(o.en||o.sv)}
 function subOf(o){return lang()==="sv"?(o.en||""):(o.sv||"")}
 Object.assign(L.en,{
+all_ch:"all chapters",
 k_passed_s:"passed",s_left:"Catch-up",s_left_b:"test questions you missed or haven\u2019t seen yet",
 t_next:"next question",t_finish:"finish the test",t_pick:"Pick an answer first",t_leave_q:"Leave the test? This attempt won\u2019t count.",t_stay:"stay",t_leave_yes:"yes, leave",
 cando_note:"Each one turns green once you\u2019ve passed every chapter that covers it.",
@@ -925,6 +928,7 @@ pic_ex:"explore",pic_te:"test me",pic_aria:"a drawing you can tap",pic_where:"Va
 pic_from:b=>"from "+b,pic_yes:"Ja!",pic_no:s=>"That’s "+s+". Try again: var är"
 });
 Object.assign(L.sv,{
+all_ch:"alla kapitel",
 k_passed_s:"klart",s_left:"Ikapp",s_left_b:"provfrågor du missade eller inte har sett än",
 t_next:"nästa fråga",t_finish:"lämna in provet",t_pick:"Välj ett svar först",t_leave_q:"Lämna provet? Försöket räknas inte.",t_stay:"stanna",t_leave_yes:"ja, lämna",
 cando_note:"Varje punkt blir grön när du har klarat alla kapitel som tar upp den.",
@@ -3730,7 +3734,7 @@ function renderChapter(c){
   if(CHSEC==="test")return secTest(c);
   const cs=chState(c), t=testRec(c), hue=chHue(c), done=modDone(c);
   const wp=wordsPc(c), pp=practicePc(c);
-  let h='<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="iconbtn" id="back" style="margin-bottom:10px">←</button>'+
+  let h='<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="backbtn" id="back"><span class="barr">←</span>'+T("all_ch")+'</button>'+
     '<div class="introhead"><span class="mnum big">'+c.n+'</span><div><h2>'+esc(titleOf(c))+'</h2><p>'+esc(chSub(c))+'</p></div></div>';
   if(done)h+='<div class="stamp"><b>'+T("k_passed")+'</b></div>';
   h+=secRow("read",1,T("s_read"),c.read.t,readDone(c)?"done":"")+
@@ -3753,7 +3757,7 @@ function renderChapter(c){
 }
 function secHead(c,title){
   const hue=chHue(c);
-  return '<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="iconbtn" id="back" style="margin-bottom:10px">←</button>'+
+  return '<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="backbtn" id="back"><span class="barr">←</span>'+T("t_tochapter")+'</button>'+
     '<div class="sechead"><span>'+esc(titleOf(c))+'</span><h2>'+esc(title)+'</h2></div>';
 }
 function wireBack(){document.getElementById("back").onclick=()=>{CHSEC=null;render();window.scrollTo(0,0)}}
@@ -4149,7 +4153,7 @@ function viewOrd(){
 
 function renderModIntro(m){
   const p=modProgress(m), i=a1().indexOf(m), hue=HUES[(i<0?0:i)%5];
-  let h='<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="iconbtn" id="back" style="margin-bottom:10px">←</button>'+
+  let h='<div class="fadein pad" style="--c:var(--h-'+hue+');--cs:var(--hs-'+hue+')"><button class="backbtn" id="back"><span class="barr">←</span>'+T("back")+'</button>'+
     '<div class="introhead"><span class="mnum big">'+(i+1)+'</span><div><h2>'+esc(titleOf(m))+'</h2><p>'+esc(subOf(m))+'</p></div></div>';
   if(m.read){
     h+='<div class="sec">'+T("sec_first")+'</div>'+
@@ -4281,7 +4285,7 @@ function renderSession(){
   if(q.t==="listen")setTimeout(()=>say(q.sv),320);
   const keys='<div class="keys">'+(typed?'<button class="key" data-k="å">å</button><button class="key" data-k="ä">ä</button><button class="key" data-k="ö">ö</button>':"")+
     '<span class="kspacer"></span><button class="key" id="skip">'+T("skip")+'</button></div>';
-  V().innerHTML='<div class="ex fadein pad"><div class="exhead"><span>'+esc(SESS.title)+'</span><span>'+(SESS.i+1)+' / '+SESS.q.length+'</span></div>'+
+  V().innerHTML='<div class="ex fadein pad"><button class="backbtn" id="sback"><span class="barr">←</span>'+(SESS.mid?T("t_tochapter"):T("back"))+'</button><div class="exhead"><span>'+esc(SESS.title)+'</span><span>'+(SESS.i+1)+' / '+SESS.q.length+'</span></div>'+
     '<div class="extop"><i style="width:'+pc+'%"></i></div>'+body+
     '<div id="errslot"></div>'+
     ((q.t==="order"||q.t==="listen"||typed)?'<button class="go" id="chk">'+T("check")+'</button>':
@@ -4290,6 +4294,8 @@ function renderSession(){
 }
 
 function wire(q){
+  const sb=document.getElementById("sback");
+  if(sb)sb.onclick=()=>{const m=SESS&&SESS.mid?mod(SESS.mid):null;SESS=null;document.onkeydown=null;if(m)openChapter(m);else go("hem")};
   const skip=document.getElementById("skip");
   if(skip)skip.onclick=()=>{grade(q.id,0);SESS.wrong++;noteMiss(q,T("skipped"));showFb(q,{r:"no",a:correctOf(q)},true)};
   document.querySelectorAll(".key[data-k]").forEach(b=>b.onclick=()=>{
