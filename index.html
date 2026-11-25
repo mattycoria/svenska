@@ -323,6 +323,11 @@ input{font:inherit}
 body{font-size:18px}
 }
 .go+.firstnote{margin-top:16px}
+.tnav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
+.tnav .tnext{flex:1;margin:0}.tnext.dim{opacity:.45}
+.tleave{margin-top:70px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
+.tleave p{font-size:18px;color:var(--tx2);margin:0 0 12px}.tleaveb{display:flex;gap:12px;justify-content:center}
+.key.warn{border-color:var(--h-coral);color:var(--h-coral)}
 .secrow{display:flex;align-items:center;gap:14px;padding:13px 16px}
 .secrow b{font-weight:400;font-size:20px;display:block}
 .secsub{display:block;font-size:16px;color:var(--tx2);font-style:italic;line-height:1.35}
@@ -891,6 +896,7 @@ function T(k,...a){
 function titleOf(o){return lang()==="sv"?o.sv:(o.en||o.sv)}
 function subOf(o){return lang()==="sv"?(o.en||""):(o.sv||"")}
 Object.assign(L.en,{
+t_next:"next question",t_finish:"finish the test",t_pick:"Pick an answer first",t_leave_q:"Leave the test? This attempt won\u2019t count.",t_stay:"stay",t_leave_yes:"yes, leave",
 cando_note:"Each one turns green once you\u2019ve passed every chapter that covers it.",
 hero_sub:(a,b,c)=>a+" of "+b+" chapters passed · "+c+" words met",n_new:"new chapter",
 coming_b:"News articles to read and answer on, plus A2 and B1, once you are further into A1.",
@@ -918,6 +924,7 @@ pic_ex:"explore",pic_te:"test me",pic_aria:"a drawing you can tap",pic_where:"Va
 pic_from:b=>"from "+b,pic_yes:"Ja!",pic_no:s=>"That’s "+s+". Try again: var är"
 });
 Object.assign(L.sv,{
+t_next:"nästa fråga",t_finish:"lämna in provet",t_pick:"Välj ett svar först",t_leave_q:"Lämna provet? Försöket räknas inte.",t_stay:"stanna",t_leave_yes:"ja, lämna",
 cando_note:"Varje punkt blir grön när du har klarat alla kapitel som tar upp den.",
 hero_sub:(a,b,c)=>a+" av "+b+" kapitel klara · "+c+" ord mötta",n_new:"nytt kapitel",
 k_note:(p,n)=>"Välj vilket kapitel du vill, i vilken ordning du vill. Ett kapitel är klart när du klarar provet. "+p+" av "+n+" klara.",
@@ -3865,20 +3872,29 @@ function renderTest(){
     '<div class="extop"><i style="width:'+pc+'%"></i></div>';
   if(q.p)h+='<div class="lbl">'+esc(q.p.t)+'</div><div class="passage test">'+esc(q.p.sv).replace(/\n/g,"<br>")+'</div>';
   else if(q.from)h+='<div class="lbl">'+esc(T("t_from",q.from.n))+'</div>';
+  const last=TEST.i===TEST.qs.length-1, has=sel!=null;
   h+='<div class="rq">'+esc(q.q)+'</div><div class="opts">'+
     q.o.map((o,i)=>'<button class="opt'+(sel===i?" picked":"")+'" data-o="'+i+'">'+esc(o)+'</button>').join("")+'</div>'+
-    '<div class="keys">'+(TEST.i>0?'<button class="key" id="tprev">'+T("t_prev")+'</button>':"")+
-    '<span class="kspacer"></span><button class="key" id="tquit">'+(LEAVE?T("t_quit2"):T("t_quit"))+'</button></div></div>';
+    '<div class="tnav">'+(TEST.i>0?'<button class="key" id="tprev">'+T("t_prev")+'</button>':'<span></span>')+
+    '<button class="go tnext'+(has?"":" dim")+'" id="tnext"><span>'+(last?T("t_finish"):T("t_next"))+'</span><span class="goarr">→</span></button></div>'+
+    '<div class="tleave">'+(LEAVE
+      ?'<p>'+esc(T("t_leave_q"))+'</p><div class="tleaveb"><button class="key" id="tstay">'+T("t_stay")+'</button><button class="key warn" id="tgo">'+T("t_leave_yes")+'</button></div>'
+      :'<button class="linkbtn" id="tquit">'+T("t_quit")+'</button>')+'</div></div>';
   V().innerHTML=h;
   V().querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
-    TEST.ans[TEST.i]=+b.dataset.o; b.classList.add("picked"); LEAVE=false;
-    setTimeout(()=>{TEST.i++;render();const nx=TEST&&TEST.qs[TEST.i];if(!(nx&&nx.p))window.scrollTo(0,0)},160);
+    TEST.ans[TEST.i]=+b.dataset.o;
+    V().querySelectorAll(".opt").forEach(x=>x.classList.toggle("picked",x===b));
+    const nb=document.getElementById("tnext"); nb.classList.remove("dim");
   });
-  const pv=document.getElementById("tprev"); if(pv)pv.onclick=()=>{TEST.i--;LEAVE=false;render()};
-  document.getElementById("tquit").onclick=()=>{
-    if(!LEAVE){LEAVE=true;renderTest();return}
-    const c=TEST.c; TEST=null; LEAVE=false; openChapter(c,"test");
+  document.getElementById("tnext").onclick=()=>{
+    if(TEST.ans[TEST.i]==null){toast(T("t_pick"));return}
+    TEST.i++; LEAVE=false; render();
+    const nx=TEST&&TEST.qs[TEST.i]; if(!(nx&&nx.p&&TEST.qs[TEST.i-1].p===nx.p))window.scrollTo(0,0);
   };
+  const pv=document.getElementById("tprev"); if(pv)pv.onclick=()=>{TEST.i--;LEAVE=false;render()};
+  const tq=document.getElementById("tquit"); if(tq)tq.onclick=()=>{LEAVE=true;renderTest()};
+  const ts=document.getElementById("tstay"); if(ts)ts.onclick=()=>{LEAVE=false;renderTest()};
+  const tg=document.getElementById("tgo"); if(tg)tg.onclick=()=>{const c=TEST.c; TEST=null; LEAVE=false; openChapter(c,"test")};
 }
 function finishTest(){
   const c=TEST.c, qs=TEST.qs, n=qs.filter((q,i)=>TEST.ans[i]===q.a).length, pass=n>=PASSMARK;
