@@ -328,6 +328,7 @@ body{font-size:18px}
 .tleave{margin-top:70px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
 .tleave p{font-size:18px;color:var(--tx2);margin:0 0 12px}.tleaveb{display:flex;gap:12px;justify-content:center}
 .key.warn{border-color:var(--h-coral);color:var(--h-coral)}
+.spk.pspk{display:inline-flex;vertical-align:middle;margin-left:12px;width:40px;height:40px}
 .backbtn{display:inline-flex;align-items:center;gap:10px;font:inherit;font-size:19px;color:var(--tx);background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:9px 18px 9px 14px;margin:2px 0 16px;cursor:pointer}
 .backbtn .barr{font-size:24px;line-height:1}
 .secrow{display:flex;align-items:center;gap:14px;padding:13px 16px}
@@ -4268,10 +4269,10 @@ function renderSession(){
       '<div class="rq">'+esc(q.q)+'</div>'+
       '<div class="opts">'+q.o.map((o,i)=>'<button class="opt" data-o="'+i+'">'+esc(o)+'</button>').join("")+'</div>';
   } else if(q.t==="choice"){
-    body='<div class="lbl">'+(q.vocab?T("l_mean"):T("l_choose"))+'</div><div class="prompt'+(q.vocab?" sv":"")+'">'+esc(q.q)+'</div>'+
+    body='<div class="lbl">'+(q.vocab?T("l_mean"):T("l_choose"))+'</div><div class="prompt'+(q.vocab?" sv":"")+'">'+esc(q.q)+(q.vocab&&audioOn()?spk(q.q,"pspk"):"")+'</div>'+
       '<div class="opts">'+q.o.map((o,i)=>'<button class="opt" data-o="'+i+'">'+esc(o)+'</button>').join("")+'</div>';
   } else if(q.t==="gender"){
-    body='<div class="lbl">'+T("l_gender")+'</div><div class="prompt sv">'+esc(q.w)+'</div>'+
+    body='<div class="lbl">'+T("l_gender")+'</div><div class="prompt sv">'+esc(q.w)+(audioOn()?spk(q.w,"pspk"):"")+'</div>'+
       '<div class="opts dual"><button class="opt" data-o="0">en '+esc(q.w)+'</button><button class="opt" data-o="1">ett '+esc(q.w)+'</button></div>';
   } else if(q.t==="fill"){
     body='<div class="lbl">'+T("l_fill")+'</div><div class="prompt sv">'+esc(q.sv)+'</div>'+
